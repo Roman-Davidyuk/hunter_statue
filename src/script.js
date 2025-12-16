@@ -19,10 +19,12 @@ scene.fog = new THREE.FogExp2("#020208", 0.02);
  * Loaders
  */
 const loadingBarElement = document.querySelector(".loading-bar");
+const loadingOverlay = document.querySelector(".loading-overlay");
+
 const loadingManager = new THREE.LoadingManager(
   () => {
     window.setTimeout(() => {
-      loadingBarElement.classList.add("ended");
+      loadingOverlay.classList.add("ended");
       loadingBarElement.style.transform = "";
     }, 500);
   },
@@ -69,8 +71,8 @@ rgbeLoader.load(
     scene.background = environmentMap;
     scene.environment = environmentMap;
     scene.backgroundBlurriness = 0;
-    scene.backgroundIntensity = 0.2;
-    scene.environmentIntensity = 0.2;
+    scene.backgroundIntensity = 0.16;
+    scene.environmentIntensity = 0.16;
   }
 );
 
@@ -107,6 +109,41 @@ pedestal.position.y = -1.2;
 pedestal.receiveShadow = true;
 pedestal.castShadow = true;
 scene.add(pedestal);
+
+/**
+ * Bushes
+ */
+const bushGeometry = new THREE.IcosahedronGeometry(1, 0);
+const bushMaterial = new THREE.MeshStandardMaterial({
+  color: "#2d5a2d",
+  roughness: 0.8,
+});
+
+const bushesCount = 80;
+const bushes = new THREE.InstancedMesh(bushGeometry, bushMaterial, bushesCount);
+
+const dummy = new THREE.Object3D();
+
+for (let i = 0; i < bushesCount; i++) {
+  const angle = Math.random() * Math.PI * 2;
+  const radius = 12 + Math.random() * 8;
+
+  const x = Math.sin(angle) * radius;
+  const z = Math.cos(angle) * radius;
+
+  dummy.position.set(x, -2.2, z);
+
+  const scale = 1 + Math.random() * 1.5;
+  dummy.scale.set(scale, scale, scale);
+
+  dummy.rotation.y = Math.random() * Math.PI;
+
+  dummy.updateMatrix();
+  bushes.setMatrixAt(i, dummy.matrix);
+}
+bushes.castShadow = true;
+bushes.receiveShadow = true;
+scene.add(bushes);
 
 /**
  * SHADER: Mystic Mist
@@ -208,7 +245,7 @@ gltfLoader.load("/models/statue_of_a_hunter.glb", (gltf) => {
   const box = new THREE.Box3().setFromObject(model);
   const center = new THREE.Vector3();
   box.getCenter(center);
-  model.position.x += model.position.x - center.x;
+  model.position.x += model.position.x - center.x + 0.2;
   model.position.z += model.position.z - center.z;
   model.position.y += model.position.y - box.min.y;
 
@@ -251,7 +288,7 @@ scene.add(heroLightFront);
 
 // Світло ззаду (НОВЕ)
 const heroLightBack = new THREE.PointLight("#00ffff", 2, 6);
-heroLightBack.position.set(0, -0.5, -0.5); // Дзеркальна позиція по Z
+heroLightBack.position.set(0, -0.5, -1); // Дзеркальна позиція по Z
 scene.add(heroLightBack);
 
 /**
@@ -278,15 +315,15 @@ const camera = new THREE.PerspectiveCamera(
   0.1,
   100
 );
-camera.position.set(0, 3, 12);
+camera.position.set(3, 0.5, 6);
 scene.add(camera);
 
 const controls = new OrbitControls(camera, canvas);
 controls.enableDamping = true;
-controls.maxPolarAngle = Math.PI / 2 - 0.05;
+controls.maxPolarAngle = Math.PI / 2 - 0.02;
 controls.target.set(0, 2.0, 0);
-controls.minDistance = 3;
-controls.maxDistance = 25;
+controls.minDistance = 1.2;
+controls.maxDistance = 10;
 
 // AUDIO
 const listener = new THREE.AudioListener();
@@ -311,7 +348,7 @@ window.addEventListener("click", () => {
  */
 const renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: true });
 renderer.toneMapping = THREE.ReinhardToneMapping;
-renderer.toneMappingExposure = 1.0;
+renderer.toneMappingExposure = 0.8;
 renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 renderer.setSize(sizes.width, sizes.height);
